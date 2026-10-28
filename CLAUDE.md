@@ -11,15 +11,33 @@ Read these before making design decisions:
 - `docs/adr/`: decision records. Add a new ADR when changing one of these decisions.
 - `docs/roadmap.md`: the week-by-week plan and the "done when" criteria
 
-**Status:** planning only. No application code exists yet.
+**Status:** week-1 skeleton. The backend serves `GET /api/status` and Actuator. The frontend has one page that calls it. The `instruments` table exists (Flyway V1), with no entity yet.
 
 ## Commands
 
-_To be filled in when the skeleton exists (roadmap week 1)._ Planned tools: Gradle (Kotlin DSL) for `backend/`, npm + Vite for `frontend/`, Playwright in `e2e/`, Docker Compose for Postgres.
+Backend (Java 25 / Spring Boot 4.1; run from `backend/`):
+- `./gradlew bootRun`: starts the app on :8080. Spring Boot's Docker Compose support starts Postgres from `../docker-compose.yml` automatically.
+- `./gradlew build`: compile and run all tests. Tests use Testcontainers, so Docker must be running.
+- `./gradlew test --tests 'no.vestra.common.api.StatusControllerTests'`: run one test class. Append `.methodName` for a single test.
+- `./gradlew bootTestRun`: runs the app against a throwaway Testcontainers Postgres (`TestVestraApplication`).
+
+Frontend (run from `frontend/`):
+- `npm run dev`: Vite on :5173. It proxies `/api`, `/actuator` and `/ws` to :8080, so the backend must be running.
+- `npm run lint` runs oxlint. `npm run typecheck`, `npm test` (Vitest) and `npm run build` are the other checks.
+- `npx vitest run src/features/home/HomePage.test.tsx`: run one test file. Add `-t "name"` for a single test.
+
+## Hosting ([ADR 0007](docs/adr/0007-hosting-vercel-render-neon.md))
+
+- **Frontend on Vercel** (root directory `frontend/`). `frontend/vercel.json` rewrites `/api/*` to the Render backend, so REST calls are same-origin and session cookies work. All other paths go to `index.html`.
+- **Backend on Render**, built from `backend/Dockerfile` (`docker build -t vestra-api backend`) and defined in `render.yaml`. It runs one instance on the free tier, which **sleeps when idle**. Scheduled jobs must therefore also catch up on startup.
+- **Database on Neon**, through the direct (non-pooled) endpoint with `sslmode=require`. The URL and credentials come from the `SPRING_DATASOURCE_*` env vars.
+- **WebSocket.** Vercel can't proxy WebSockets, so the browser connects to Render directly. That connection has no session, so price topics are public. `VESTRA_ALLOWED_ORIGINS` lists the allowed frontend origins.
+
+CI (`.github/workflows/ci.yml`) runs the backend build, the frontend checks and the backend image build. Vercel and Render deploy automatically from GitHub.
 
 ## Planned layout
 
-- `backend/`: Spring Boot 3, Java 21, base package `no.vestra`.
+- `backend/`: Spring Boot 4, Java 25, base package `no.vestra`.
   - Domain modules: `auth`, `account`, `instrument`, `marketdata`, `trading`, `portfolio`, `watchlist`, `common`. Each has `api/`, `domain/` and `infra/` subpackages.
   - Flyway migrations live in `backend/src/main/resources/db/migration`.
 - `frontend/`: React, TypeScript, Vite, TanStack Query, Tailwind.

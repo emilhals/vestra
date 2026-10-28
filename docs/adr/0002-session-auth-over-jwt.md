@@ -3,13 +3,13 @@
 **Status:** Accepted
 
 ## Context
-The SPA and API are served from the same origin. The usual alternative is a JWT stored in `localStorage`. That exposes the token to any XSS, and logging out or revoking a token needs extra machinery.
+The browser reaches the API on the same origin as the SPA: Vercel rewrites `/api/*` to the backend ([ADR 0007](0007-hosting-vercel-render-neon.md)). The usual alternative is a JWT stored in `localStorage`. That exposes the token to any XSS, and logging out or revoking a token needs extra machinery.
 
 ## Decision
 Use Spring Security with server-side sessions stored in Postgres (Spring Session JDBC):
 - Session cookies are `HttpOnly`, `Secure` and `SameSite=Lax`.
 - CSRF protection uses a cookie-to-header token.
-- The WebSocket (STOMP) handshake is authenticated with the same session.
+- REST calls are authenticated with the session. The WebSocket goes straight to the backend without the cookie, so it only carries public price data ([ADR 0007](0007-hosting-vercel-render-neon.md)).
 
 ## Consequences
 - JavaScript can never read the session token, and logout or revocation is immediate.

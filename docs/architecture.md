@@ -38,7 +38,7 @@ Base package `no.vestra`. Each module has `api/` (controllers, DTOs), `domain/` 
 
 Vestra mixes real and simulated data ([ADR 0003](adr/0003-hybrid-market-data.md)):
 
-1. **`HistoryIngestJob`** runs nightly. It fetches daily price bars for every instrument from the external provider and upserts them into `price_bar`. The provider is **never** called on a user request, so free-tier rate limits don't affect users.
+1. **`HistoryIngestJob`** runs nightly, and **on startup** to fill in days missed while the Render instance slept. It fetches daily price bars for every instrument from the external provider and upserts them into `price_bar`, so re-running it is harmless. The provider is **never** called on a user request, so free-tier rate limits don't affect users.
 2. **`PriceSimulator`** starts each instrument from its latest real close. Every 1–2 seconds it produces a new price with geometric Brownian motion (per-instrument drift and volatility). It writes the price to the in-memory **latest-price cache** and publishes a `PriceTickEvent`.
 3. **`PriceBroadcaster`** listens for `PriceTickEvent` and sends the tick to STOMP topic `/topic/prices/{symbol}`.
 4. **`LimitOrderMatcher`** listens for `PriceTickEvent` too. It checks that instrument's open limit orders and executes those whose limit has been reached.
@@ -85,8 +85,8 @@ These are the core of the project ([ADR 0006](adr/0006-ledger-and-locking.md)):
 - Spring Security with form/JSON login and server-side sessions stored in Postgres (Spring Session JDBC).
 - Cookies are `HttpOnly`, `Secure` and `SameSite=Lax`.
 - CSRF protection uses a cookie-to-header token that the SPA reads and sends back.
-- The WebSocket handshake goes through the same security filter chain, so a STOMP connection belongs to the logged-in session.
-- The frontend and API are served from the same origin, so CORS isn't needed in production.
+- Vercel rewrites `/api/*` to the backend, so REST calls are same-origin and CORS isn't needed for them.
+- The WebSocket connects directly to the backend, without the session cookie. It only carries public price topics, and its allowed origins are set by `VESTRA_ALLOWED_ORIGINS` ([ADR 0007](adr/0007-hosting-vercel-render-neon.md)).
 
 ## Data model
 
@@ -114,12 +114,15 @@ Spring Session creates its own `spring_session` tables through its schema script
 - **Unrealized gain/loss** = Σ(quantity × (latest price − avg_cost)).
 - **Realized gain/loss** accumulates in `positions.realized_pnl` on each sell, using the average cost method.
 - **Today's change** compares live value with yesterday's snapshot.
-- **History.** A daily job values each account at that day's close and writes a `portfolio_snapshots` row, which feeds the value-over-time chart.
+- **History.** A daily job values each account at that day's close and writes a `portfolio_snapshots` row, which feeds the value-over-time chart. On startup it also back-fills any missing days.
 
 ## Deployment
 
 - **Docker Compose** runs Postgres locally (plus the app, for prod-like runs).
 - **GitHub Actions** builds and tests both apps on every push.
-- In production, one app container on Fly.io or Railway serves both the API and the built SPA, with managed Postgres alongside.
+- In production ([ADR 0007](adr/0007-hosting-vercel-render-neon.md)):
+  - **Vercel** serves the SPA and rewrites `/api/*` to the backend.
+  - **Render** runs one backend container on the free tier, which sleeps when idle, so scheduled jobs also catch up on startup.
+  - **Neon** hosts Postgres, reached through its direct endpoint.
 - Spring Boot Actuator provides health checks.
 - Logs are structured JSON.

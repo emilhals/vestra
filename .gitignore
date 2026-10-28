@@ -1,0 +1,30 @@
+# Secrets and local config (market-data API keys, DB credentials)
+.env
+.env.*
+!.env.example
+**/src/main/resources/application-local.*
+
+# Deployment CLIs (vercel link writes project/org IDs here)
+.vercel/
+
+# Playwright (e2e/)
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Test coverage
+coverage/
+
+# Logs
+*.log
+
+# Claude Code personal settings (shared settings.json stays tracked)
+.claude/settings.local.json
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
