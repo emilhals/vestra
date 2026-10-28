@@ -1,0 +1,26 @@
+# Render Blueprint for the backend. Secrets marked sync: false are entered in the
+# Render dashboard when the Blueprint is first applied.
+services:
+  - type: web
+    name: vestra-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    region: frankfurt
+    plan: free
+    healthCheckPath: /actuator/health/readiness
+    autoDeploy: true
+    envVars:
+      - key: SPRING_DOCKER_COMPOSE_ENABLED
+        value: "false"
+      # Neon direct (non-pooled) endpoint, e.g.
+      # jdbc:postgresql://ep-xxx.eu-central-1.aws.neon.tech/vestra?sslmode=require
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      # The Vercel production URL, e.g. https://vestra.vercel.app
+      - key: VESTRA_ALLOWED_ORIGINS
+        sync: false
