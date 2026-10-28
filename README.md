@@ -42,12 +42,21 @@ A full-stack paper-trading and investment dashboard for Oslo Børs stocks. Users
 | Frontend | React, TypeScript, Vite, TanStack Query, React Router, Tailwind CSS |
 | Charts | TradingView `lightweight-charts` (prices), Recharts (allocation) |
 | API client | Generated from the backend's OpenAPI spec (`openapi-typescript`) |
-| Backend | Java 21, Spring Boot 3, Gradle (Kotlin DSL) |
+| Backend | Java 25, Spring Boot 4, Gradle (Kotlin DSL) |
 | Persistence | PostgreSQL 16, Spring Data JPA, Flyway |
 | Auth | Spring Security, session cookies (Spring Session JDBC), CSRF protection |
 | Real-time | Spring WebSocket + STOMP |
 | Testing | JUnit 5, Testcontainers, MockMvc · Vitest, React Testing Library · Playwright |
-| Infrastructure | Docker Compose, GitHub Actions, Fly.io or Railway with managed Postgres |
+| Infrastructure | Vercel (frontend), Render (backend, Docker), Neon (Postgres), GitHub Actions, Docker Compose locally |
+
+## Running locally
+
+You need JDK 25, Node 24+ and Docker (with the Compose plugin).
+
+```bash
+cd backend && ./gradlew bootRun     # API on :8080, starts Postgres via Docker Compose
+cd frontend && npm install && npm run dev   # UI on :5173
+```
 
 ## Documentation
 
