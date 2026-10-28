@@ -15,6 +15,19 @@ Check which free plan covers the chosen ~30–50 Oslo Børs tickers (XOSL / `.OL
 
 **Fallback:** if no free plan covers XOSL well enough, do a one-time CSV import of daily history (a `CsvHistoryProvider` behind the same interface). Live prices are simulated either way, so the user experience doesn't change.
 
+#### Spike findings (2026-10-28, desk research only, not yet tested with API keys)
+
+| Provider | Free plan, as reported | Fit for XOSL |
+|---|---|---|
+| Finnhub | Free plan is US-only. Historical candles reportedly moved to paid plans, even for US stocks. | Ruled out |
+| Twelve Data | Lists XOSL as an end-of-day exchange. Free plan is about 800 calls/day, but several reports say non-US symbols need a paid plan. | Unlikely. Test one `.OL`/XOSL symbol to confirm. |
+| EODHD | Free key: 20 calls/day, end-of-day data only, about 1 year of history. Free-plan coverage of `.OL` tickers isn't documented. | Best candidate. 40 tickers would take a 2-day backfill, and the nightly updates (1 call per ticker) wouldn't fit in 20 calls/day. |
+
+**Still to do:**
+1. Register free keys and request one Oslo ticker (for example `EQNR`) from Twelve Data and EODHD.
+2. Decide between EODHD with a one-time backfill (about 1 year of history; nightly updates for only some tickers, or none) and the CSV fallback.
+3. Write down the final list of instruments.
+
 ## Consequences
 - Charts show real price history, and the app works under any rate limit.
 - The live prices are made up. The UI should say so (for example a "simulated live prices" label).
