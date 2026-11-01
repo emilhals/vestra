@@ -66,7 +66,7 @@ Chart data comes from `price_bar`. The 1D chart is built from today's simulated 
 
 These are the core of the project ([ADR 0006](adr/0006-ledger-and-locking.md)):
 
-- **Money** is `NUMERIC(19,4)` in Postgres and `BigDecimal` in Java. Never `double` or `float`. Quantities are whole shares (`BIGINT`).
+- **Money** is `NUMERIC(19,4)` in Postgres and `BigDecimal` in the backend. Never `Double`/`Float` (Kotlin) or `double`/`float` (Java). Quantities are whole shares (`BIGINT`).
 - **Cash ledger.** Every cash movement is a row in `cash_ledger` (deposit, buy, sell, reservation, release). Rows are never updated or deleted. `accounts.cash_balance` is a cached sum updated in the same transaction.
 - **One transaction per fill.**
   1. Lock the account row with `SELECT … FOR UPDATE`.

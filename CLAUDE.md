@@ -11,11 +11,11 @@ Read these before making design decisions:
 - `docs/adr/`: decision records. Add a new ADR when changing one of these decisions.
 - `docs/roadmap.md`: the week-by-week plan and the "done when" criteria
 
-**Status:** week-1 skeleton. The backend serves `GET /api/status` and Actuator. The frontend has one page that calls it. The `instruments` table exists (Flyway V1), with no entity yet.
+**Status:** week-1 skeleton. The backend serves `GET /api/status` and Actuator. The frontend has one page that calls it. The `instruments` table exists (Flyway V1), with no entity yet. The backend is moving from Java to Kotlin ([ADR 0008](docs/adr/0008-kotlin-for-the-backend.md)). The skeleton is still Java, and the empty `auth` package folders exist under `src/main/kotlin`. The Kotlin Gradle plugins aren't added yet.
 
 ## Commands
 
-Backend (Java 25 / Spring Boot 4.1; run from `backend/`):
+Backend (Kotlin on JDK 25 / Spring Boot 4.1; run from `backend/`):
 - `./gradlew bootRun`: starts the app on :8080. Spring Boot's Docker Compose support starts Postgres from `../docker-compose.yml` automatically.
 - `./gradlew build`: compile and run all tests. Tests use Testcontainers, so Docker must be running.
 - `./gradlew test --tests 'no.vestra.common.api.StatusControllerTests'`: run one test class. Append `.methodName` for a single test.
@@ -37,7 +37,8 @@ CI (`.github/workflows/ci.yml`) runs the backend build, the frontend checks and 
 
 ## Planned layout
 
-- `backend/`: Spring Boot 4, Java 25, base package `no.vestra`.
+- `backend/`: Spring Boot 4, Kotlin on JDK 25, base package `no.vestra`.
+  - New code goes in `src/main/kotlin` and `src/test/kotlin`. The existing Java in `src/main/java` stays until it's ported.
   - Domain modules: `auth`, `account`, `instrument`, `marketdata`, `trading`, `portfolio`, `watchlist`, `common`. Each has `api/`, `domain/` and `infra/` subpackages.
   - Flyway migrations live in `backend/src/main/resources/db/migration`.
 - `frontend/`: React, TypeScript, Vite, TanStack Query, Tailwind.
@@ -48,6 +49,8 @@ CI (`.github/workflows/ci.yml`) runs the backend build, the frontend checks and 
 - `docs/`: architecture, ADRs, roadmap.
 
 ## Rules that must hold
+
+- **No generated backend code:** the owner writes the backend by hand to learn Kotlin. Don't write or edit code in `backend/src` or the backend build files. Explaining, reviewing, debugging help and short snippets that show a Kotlin or Spring concept are fine. Frontend, docs, CI and deploy config can be written as usual.
 
 - **Module boundaries:** modules talk only through public services or Spring events. Never use another module's repository. Boundary tests (Spring Modulith or ArchUnit) enforce this.
 - **Money:**
